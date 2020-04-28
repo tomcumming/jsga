@@ -1,16 +1,17 @@
 import { ElemIdx } from ".";
 
-export function* combinations<T>(xs: T[]): Iterable<T[]> {
-  yield [];
-
-  function* go(xs: T[]): Iterable<T[]> {
-    if (xs.length > 0) {
-      for (const x of xs) yield [x];
-      for (const tails of go(xs.slice(1))) yield [xs[0], ...tails];
-    }
+export function* sizedCombinations<T>(count: number, xs: T[]): Iterable<T[]> {
+  if (count === 0) yield [];
+  else if (count <= xs.length) {
+    for (const tail of sizedCombinations(count - 1, xs.slice(1)))
+      yield [xs[0], ...tail];
+    yield* sizedCombinations(count, xs.slice(1));
   }
+}
 
-  yield* go(xs);
+export function* combinations<T>(xs: T[]): Iterable<T[]> {
+  for (let len = 0; len <= xs.length; len += 1)
+    yield* sizedCombinations(len, xs);
 }
 
 export default function elems(
