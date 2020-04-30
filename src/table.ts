@@ -61,7 +61,7 @@ export default function makeTable(
   negative: number,
   zero: number
 ): MultTable {
-  const es = elems(positive, negative, zero);
+  const es = elems(positive, negative, zero).map((vs) => new Set(vs));
 
   let ret: MultTable = [];
 

@@ -18,9 +18,9 @@ export default function elems(
   positive: number,
   negative: number,
   zero: number
-): Set<ElemIdx>[] {
+): ElemIdx[][] {
   let elemIdxs = [];
   for (let idx = 0; idx < positive + negative + zero; idx += 1)
     elemIdxs.push(idx);
-  return Array.from(combinations(elemIdxs)).map((xs) => new Set(xs));
+  return Array.from(combinations(elemIdxs));
 }
