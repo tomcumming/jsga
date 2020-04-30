@@ -1,9 +1,12 @@
 import { ElemIdx, Scalar } from ".";
-import elems, { combinations } from "./elems";
+import elems from "./elems";
 
-/** This is the sign(or zero) and the result element */
-export type TableEntry = [Scalar, ElemIdx];
-export type MultTable = { [left: number]: { [right: number]: TableEntry } };
+/** This number is 0 for 0 else Math.abs() - 1 for the elem
+ * and Math.sign for the... sign */
+export type TableEntry = number;
+
+/** Lookup an entry with table[left * elems + right] */
+export type MultTable = TableEntry[];
 
 type MultiVector =
   | 0
@@ -60,19 +63,17 @@ export default function makeTable(
 ): MultTable {
   const es = elems(positive, negative, zero);
 
-  let ret: MultTable = {};
+  let ret: MultTable = [];
 
   for (let leftIdx = 0; leftIdx < es.length; leftIdx += 1) {
-    ret[leftIdx] = {};
-
     for (let rightIdx = 0; rightIdx < es.length; rightIdx += 1) {
       let mv: MultiVector = { scalar: 1, elems: es[leftIdx] };
       for (const right of Array.from(es[rightIdx]).sort())
         mv = mulElem(positive, negative, zero, mv, right);
-      if (mv === 0) ret[leftIdx][rightIdx] = [0, 0];
+      if (mv === 0) ret.push(0);
       else {
         const elemIdx = elementIndex(es, mv.elems);
-        ret[leftIdx][rightIdx] = [mv.scalar, elemIdx];
+        ret.push(mv.scalar * (elemIdx + 1));
       }
     }
   }
