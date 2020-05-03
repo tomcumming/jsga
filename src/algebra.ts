@@ -37,6 +37,18 @@ export class Algebra<
     return fromElements(mv);
   }
 
+  fromBasisVectors(...vs: ElemIdx[]): MultiVector<Positive, Negative, Zero> {
+    let ret = this.scalar(1);
+    for (const v of vs) {
+      if (v < 0 || v >= this.positives + this.negatives + this.zeros)
+        throw new Error(`Value was not a basis vector (name)`);
+      const ve = toElements(this.zero).slice();
+      ve[1 + v] = 1;
+      ret = this.mul(ret, fromElements(ve));
+    }
+    return ret;
+  }
+
   /** Look up a single element from this multivector.
    * For example `elem(mv, 0, 1)` would give you e01 */
   elem(
