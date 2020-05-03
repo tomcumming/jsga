@@ -5,6 +5,8 @@ import { fromElements, MultiVector, toElements } from "./multivector";
 import { Scalar, ElemIdx } from ".";
 import elems from "./elems";
 
+type ArrayIdx = number;
+
 export class Algebra<
   Positive extends number,
   Negative extends number,
@@ -12,6 +14,7 @@ export class Algebra<
 > {
   private readonly table: MultTable;
   private readonly elems: ElemIdx[][];
+  private readonly blades: ArrayIdx[][];
   readonly elements: number;
   readonly zero: MultiVector<Positive, Negative, Zero>;
 
@@ -22,9 +25,16 @@ export class Algebra<
   ) {
     this.table = makeTable(positives, negatives, zeros);
     this.elems = elems(positives, negatives, zeros);
+    this.blades = makeBlades(this.elems);
 
-    this.elements = positives + negatives + zeros;
+    this.elements = 2 ** (positives + negatives + zeros);
     this.zero = makeZero(this.elements);
+  }
+
+  scalar(s: number): MultiVector<Positive, Negative, Zero> {
+    const mv = toElements(this.zero).slice();
+    mv[0] = s;
+    return fromElements(mv);
   }
 
   /** Look up a single element from this multivector.
@@ -39,6 +49,41 @@ export class Algebra<
     );
     if (idx === -1) throw new Error(`Could not find element`);
     else return toElements(mv)[idx];
+  }
+
+  dual(
+    mv: MultiVector<Positive, Negative, Zero>
+  ): MultiVector<Positive, Negative, Zero> {
+    return fromElements(toElements(mv).slice().reverse());
+  }
+
+  reverse(
+    mv: MultiVector<Positive, Negative, Zero>
+  ): MultiVector<Positive, Negative, Zero> {
+    const elems = toElements(mv).slice();
+    for (const blade of this.blades.filter((_, idx) => idx % 4 >= 2))
+      for (const idx of blade) elems[idx] *= -1;
+    return fromElements(elems);
+  }
+
+  add(
+    left: MultiVector<Positive, Negative, Zero>,
+    right: MultiVector<Positive, Negative, Zero>
+  ): MultiVector<Positive, Negative, Zero> {
+    const rightElems = toElements(right);
+    return fromElements(
+      toElements(left).map((left, idx) => left + rightElems[idx])
+    );
+  }
+
+  sub(
+    left: MultiVector<Positive, Negative, Zero>,
+    right: MultiVector<Positive, Negative, Zero>
+  ): MultiVector<Positive, Negative, Zero> {
+    const rightElems = toElements(right);
+    return fromElements(
+      toElements(left).map((left, idx) => left - rightElems[idx])
+    );
   }
 
   muls(
@@ -82,4 +127,18 @@ function makeZero(elements: number): MultiVector<any, any, any> {
   let ret = [];
   for (let idx = 0; idx < elements; idx += 1) ret.push(0);
   return fromElements(ret);
+}
+
+function makeBlades(elems: ElemIdx[][]): ArrayIdx[][] {
+  let idx = 0;
+  let blades = new Map<number, ArrayIdx[]>();
+  for (const elem of elems) {
+    const elemCount = elem.length;
+    const existing = blades.get(elemCount);
+    if (existing) existing.push(idx);
+    else blades.set(elemCount, [idx]);
+    idx += 1;
+  }
+
+  return Array.from(blades.values()); // Hopefully sorted
 }
